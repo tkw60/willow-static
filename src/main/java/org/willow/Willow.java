@@ -33,24 +33,15 @@ public class Willow {
     }
 
     private final String component;
+    private final int    routerWebPort;
 
     public Willow(String component) {
-        this.component = component;
+        this(component, 22000);
     }
 
-    public MuServerBuilder serverBuilder(int port) {
-        final Logger logger = LoggerFactory.getLogger("AccessLog");
-        return MuServerBuilder.muServer()
-                .withHttpPort(port)
-                .addResponseCompleteListener(info -> {
-                    logger.info("Sent {} / {}s for {} {}{}",
-                            info.response().status(),
-                            String.format("%6.3f", info.duration() / 1000.0),
-                            info.request().method(),
-                            info.request().uri().toString(),
-                            Set.of(302,301).contains(info.response().status()) ? " ->" : ""
-                    );
-                });
+    public Willow(String component, int routerWebPort) {
+        this.component = component;
+        this.routerWebPort = routerWebPort;
     }
 
     @Override
@@ -67,6 +58,49 @@ public class Willow {
         return "/" + route();
     }
 
+    protected int getRouterWebPort() {
+        return routerWebPort;
+    }
+
+    protected int getRouterRegistrationPort() {
+        return getRouterWebPort() + 1;
+    }
+
+    protected int getPriorityRegistrationPort() {
+        return getRouterRegistrationPort() + 1;
+    }
+
+    public MuServerBuilder routerWebServerBuilder() {
+        return serverBuilder(getRouterWebPort());
+    }
+
+    public MuServerBuilder routerRegistrationServerBuilder() {
+        return serverBuilder(getRouterRegistrationPort());
+    }
+
+    public MuServerBuilder routerPriorityRegistrationServerBuilder() {
+        return serverBuilder(getPriorityRegistrationPort());
+    }
+
+    public MuServerBuilder serverBuilder() {
+        return serverBuilder(0);
+    }
+
+    private MuServerBuilder serverBuilder(int port) {
+        final Logger logger = LoggerFactory.getLogger("AccessLog");
+        return MuServerBuilder.muServer()
+                .withHttpPort(port)
+                .addResponseCompleteListener(info -> {
+                    logger.info("Sent {} / {}s for {} {}{}",
+                            info.response().status(),
+                            String.format("%6.3f", info.duration() / 1000.0),
+                            info.request().method(),
+                            info.request().uri().toString(),
+                            Set.of(302,301).contains(info.response().status()) ? " ->" : ""
+                    );
+                });
+    }
+
     public CrankerConnectorBuilder connectorBuilder(URI uri) {
         return connectorBuilder(uri, route());
     }
@@ -74,7 +108,7 @@ public class Willow {
     public CrankerConnectorBuilder connectorBuilder(URI uri, String route) {
         final Logger logger = LoggerFactory.getLogger("ConnectorLog");
         return CrankerConnectorBuilder.connector()
-                .withRouterLookupByDNS(URI.create("ws://localhost:22001"))
+                .withRouterLookupByDNS(URI.create("ws://localhost:" + getRouterRegistrationPort()))
                 .withComponentName(component)
                 .withRoute(route)
                 .withTarget(uri)

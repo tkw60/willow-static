@@ -14,22 +14,27 @@ public class App {
     private final Logger LOGGER = LoggerFactory.getLogger(getClass());
 
     public static void main(String[] args) {
-        new App().start(
-                List.of(
-                        new WillowResource("/willow", "/home/vagrant/gitRepos/WillowHouse/docroot/modules", "willow.js"),
-                        new WillowResource("/KartRacer", "/home/vagrant/gitRepos/KartRacer/www"),
-                        new WillowResource("/dist", "/data/dist"),
-                        new WillowResource("/vue", "/data/dist", "vue.js"),
-                        new WillowResource("/apps", "/home/vagrant/gitRepos/VirtualHosts/provision/installedApps")
-                ));
+        App app = new App();
+        Willow platform = new Willow(app.getComponentName());
+        List<WillowResource> resources = List.of(
+                new WillowResource("/willow", "/home/vagrant/gitRepos/WillowHouse/docroot/modules", "willow.js"),
+                new WillowResource("/KartRacer", "/home/vagrant/gitRepos/KartRacer/www"),
+                new WillowResource("/dist", "/data/dist"),
+                new WillowResource("/vue", "/data/dist", "vue.js"),
+                new WillowResource("/apps", "/home/vagrant/gitRepos/VirtualHosts/provision/installedApps")
+        );
+        app.start(platform, resources);
     }
 
-    public void start(List<WillowResource> resources) {
-        Willow application = new Willow("willow-static");
+    public String getComponentName() {
+        return "willow-static";
+    }
+
+    public void start(Willow application, List<WillowResource> resources) {
         LOGGER.info("Starting " + application);
 
         // Create server
-        MuServerBuilder builder = application.serverBuilder(0);
+        MuServerBuilder builder = application.serverBuilder();
         resources.forEach(rsrc -> {
             builder.addHandler(rsrc.handler());
         });
