@@ -1,0 +1,34 @@
+<configuration>
+
+    <property name="encoder" value="%d{ISO8601} %9relative [%-11.11thread] %20.20logger{15} |%-5level| %msg%n"/>
+
+    <if condition='isDefined("log.basename")'>
+        <then>
+            <appender name="APPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <file>${log.basename}.log</file>
+                <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                    <fileNamePattern>${log.basename:-setup}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                    <maxFileSize>1Mb</maxFileSize>
+                    <maxHistory>31</maxHistory>
+                    <totalSizeCap>25Mb</totalSizeCap>
+                </rollingPolicy>
+                <encoder>
+                    <pattern>${encoder}</pattern>
+                </encoder>
+            </appender>
+        </then>
+
+        <else>
+            <appender name="APPENDER" class="ch.qos.logback.core.ConsoleAppender">
+                <encoder>
+                    <pattern>${encoder}</pattern>
+                </encoder>
+            </appender>
+        </else>
+    </if>
+
+    <root level="INFO">
+        <appender-ref ref="APPENDER" />
+    </root>
+
+</configuration>
